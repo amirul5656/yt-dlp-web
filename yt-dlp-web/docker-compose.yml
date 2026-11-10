@@ -1,0 +1,15 @@
+services:
+  ytdlp-web:
+    build: .
+    ports:
+      - "8989:8989"
+    environment:
+      - MAX_SIZE_MB=20000
+      - DOWNLOAD_DIR=/downloads
+      - KEEP_FILES_MINUTES=0
+      # - ACCESS_PASSWORD=pick-a-long-password
+    volumes:
+      - /DATA/FINAL:/downloads
+      - ./cookies.txt:/app/cookies.txt:ro
+      - ./main.py:/app/main.py:ro
+    restart: unless-stopped

@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07080a">
+<title>Amirul Downloader</title>
+<style>
+:root{--bg:#07080a;--s1:#0f1214;--s2:#161a1d;--s3:#1d2226;--ln:#232a2e;--tx:#f3f6f4;--mu:#8b958f;--g:#7dffb3;--g2:#3ddc84;--er:#ff6b6b;--r:18px;color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}[hidden]{display:none!important}
+html{background:var(--bg)}
+body{margin:0;min-height:100vh;color:var(--tx);font:15px/1.5 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:radial-gradient(900px 420px at 50% -140px,#7dffb318,transparent 70%)}
+button,input,textarea,select{font:inherit;color:inherit}button{cursor:pointer;border:0}
+a{color:var(--g)}:focus-visible{outline:2px solid var(--g);outline-offset:2px}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:var(--ln);border-radius:8px}
+
+/* top bar (phone) */
+.topbar{position:sticky;top:0;z-index:4;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 16px 10px;background:#07080acc;backdrop-filter:blur(14px);border-bottom:1px solid #ffffff0a}
+.mark{width:34px;height:34px;border-radius:11px;background:var(--g);color:#04110a;display:grid;place-items:center;flex:none}
+.brand{font-weight:700;letter-spacing:-.01em;line-height:1.1}.brand small{display:block;font-weight:400;color:var(--mu);font-size:11px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--mu);margin-left:auto}.dot.ok{background:var(--g);box-shadow:0 0 12px var(--g)}.dot.bad{background:var(--er)}
+
+/* navigation: floating pill on phone, sidebar on desktop */
+.nav{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:5;display:flex;padding:6px;background:#111518f2;backdrop-filter:blur(16px);border:1px solid var(--ln);border-radius:24px;box-shadow:0 12px 40px #000c}
+.nav .logo,.nav .sys{display:none}.nav nav{display:flex;flex:1;gap:4px}
+.nav a{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 0 7px;border-radius:18px;font-size:11px;color:var(--mu);text-decoration:none;transition:.2s}
+.nav a svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.nav a.on{background:var(--g);color:#04110a;font-weight:700}
+.bd{position:absolute;top:3px;right:calc(50% - 26px);background:var(--tx);color:#000;border-radius:99px;font-size:11px;font-weight:700;min-width:18px;padding:0 5px;text-align:center}
+
+main{max-width:960px;margin:0 auto;padding:18px 16px calc(120px + env(safe-area-inset-bottom,0px))}
+h2{display:flex;justify-content:space-between;align-items:center;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mu);margin:26px 0 10px;font-weight:600}
+.intro h1{font-size:26px;line-height:1.15;letter-spacing:-.025em;margin:6px 0 4px}.intro p{margin:0;color:var(--mu);font-size:14px}
+
+/* link box */
+.field{display:flex;align-items:flex-start;gap:6px;margin-top:16px;padding:6px 6px 6px 14px;background:var(--s1);border:1px solid var(--ln);border-radius:22px;transition:.2s}
+.field:focus-within{border-color:#7dffb399;box-shadow:0 0 0 4px #7dffb314,0 10px 40px #7dffb318}
+.field>svg{width:20px;height:20px;margin-top:13px;flex:none;stroke:var(--mu);fill:none;stroke-width:2;stroke-linecap:round}
+.field textarea{flex:1;min-width:0;resize:none;background:none;border:0;outline:0;padding:11px 2px;font-size:16px;line-height:1.4;max-height:160px}
+.field textarea::placeholder{color:#5d6761}
+.field button{height:44px;border-radius:16px;padding:0 15px;flex:none;font-weight:600;transition:.2s}
+.go{background:var(--g);color:#04110a}.go:hover:not(:disabled){background:#a9ffcc}.go:disabled{opacity:.5}
+.ghost{background:var(--s2);border:1px solid var(--ln)!important;color:var(--tx)}
+#status{min-height:0;margin-top:10px;font-size:14px;color:var(--mu)}#status:not(:empty){min-height:22px}#status.ok{color:var(--g)}#status.error{color:var(--er)}
+.sp{display:inline-block;width:12px;height:12px;border:2px solid var(--ln);border-top-color:var(--g);border-radius:50%;animation:rot .7s linear infinite;vertical-align:-1px;margin-right:6px}@keyframes rot{to{transform:rotate(360deg)}}
+#sniff{margin-top:10px}#sniff:empty{margin:0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}.row>small{color:var(--mu);min-width:56px}
+.row.scroll{flex-wrap:nowrap;overflow-x:auto;margin-left:-16px;margin-right:-16px;padding:0 16px;scrollbar-width:none}.row.scroll::-webkit-scrollbar{display:none}.row.scroll .chip{flex:none}
+.chip{background:var(--s2);border:1px solid var(--ln);color:var(--tx);border-radius:14px;padding:9px 14px;font-size:14px;transition:.2s;display:inline-flex;flex-direction:column;align-items:center;line-height:1.25}
+.chip i{font-style:normal;font-size:11px;color:var(--mu)}
+.chip:hover:not(:disabled){border-color:var(--g)}.chip:disabled{opacity:.3;cursor:not-allowed}
+.chip.on{background:var(--g);color:#04110a;border-color:var(--g);font-weight:700}.chip.on i{color:#04110a99}
+
+/* stats strip */
+.strip{display:flex;gap:8px;margin-top:16px}
+.strip span{flex:1;display:flex;flex-direction:column;gap:2px;padding:10px 12px;background:var(--s1);border:1px solid var(--ln);border-radius:16px;color:var(--mu);font-size:12px}
+.strip b{color:var(--tx);font-size:18px;font-weight:650;letter-spacing:-.01em}
+
+/* cards */
+.card{background:var(--s1);border:1px solid var(--ln);border-radius:var(--r);padding:14px;margin-top:12px}
+.prev{margin-top:16px;animation:in .3s}@keyframes in{from{opacity:0;transform:translateY(8px)}}
+.top{display:flex;gap:12px}
+.th{width:120px;aspect-ratio:16/9;border-radius:12px;background:var(--s2);object-fit:cover;flex:none;display:grid;place-items:center;color:var(--mu)}
+.mt{flex:1;min-width:0}.mt b{display:block;font-size:15px;line-height:1.35;overflow-wrap:anywhere}.mt small{color:var(--mu)}
+.tabs{display:flex;gap:2px;margin-top:14px;padding:4px;background:var(--s2);border-radius:15px}
+.tabs button{flex:1;padding:9px 4px;border-radius:11px;background:none;color:var(--mu);font-size:13px;white-space:nowrap}.tabs button.on{background:var(--tx);color:#000;font-weight:600}
+.pane{margin-top:4px}
+.cta{background:var(--g);color:#04110a;font-weight:700;border-radius:14px;min-height:46px;padding:0 22px;transition:.2s}
+.cta:hover:not(:disabled){background:#a9ffcc;box-shadow:0 8px 24px #7dffb344}.cta:disabled{opacity:.4;cursor:not-allowed}
+.big{width:100%;margin-top:16px;min-height:52px;font-size:16px}
+.note{color:var(--mu);font-size:12px;margin-top:12px}
+.sub{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin:16px 0 0}
+.lst{display:flex;flex-direction:column;gap:6px;max-height:250px;overflow:auto;margin-top:8px}
+.rf{display:flex;gap:10px;justify-content:space-between;align-items:center;text-align:left;background:var(--bg);border:1px solid var(--ln);border-radius:12px;padding:9px 12px;font-size:13px;transition:.15s}
+.rf.on{border-color:var(--g);background:#7dffb314}.rf:disabled{opacity:.3}.rf span:last-child{color:var(--mu);white-space:nowrap}
+.cols{display:grid;grid-template-columns:1fr;gap:4px}
+.tog{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid var(--ln)}.tog small{display:block;color:var(--mu)}.tog:last-child{border:0}
+.sw{appearance:none;-webkit-appearance:none;width:46px;height:26px;border-radius:99px;background:var(--s3);position:relative;transition:.2s;flex:none;cursor:pointer}
+.sw:after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--tx);transition:.2s}
+.sw:checked{background:var(--g)}.sw:checked:after{left:23px;background:#04110a}
+select{background:var(--bg);border:1px solid var(--ln);border-radius:12px;padding:9px 10px;max-width:100%}
+
+/* analysis */
+.badges{display:flex;gap:6px;flex-wrap:wrap}
+.badge{font-size:12px;font-weight:600;padding:2px 11px;border-radius:99px;background:var(--s2);border:1px solid var(--ln)}
+.badge.src{border-color:#7dffb355;color:var(--g)}
+.badge.live{background:#ff6b6b1f;border-color:#ff6b6b66;color:var(--er)}
+.badge.live:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--er);margin-right:6px;animation:bl 1.2s infinite}@keyframes bl{50%{opacity:.2}}
+.ana{margin-top:14px;padding:12px;border:1px solid var(--ln);border-radius:16px;background:#ffffff04}
+.agrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}
+.agrid small{display:block;color:var(--mu);font-size:12px}.agrid b{font-weight:600;font-size:14px;overflow-wrap:anywhere}
+.warn{margin-top:12px;font-size:13px;color:#ffd28a;background:#ffb84d12;border:1px solid #ffb84d33;border-radius:12px;padding:9px 12px}
+#stale{margin:0 0 14px;color:#ffb3b3;background:#ff6b6b14;border-color:#ff6b6b44}
+
+/* queue */
+.job{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.job .th{width:96px}.jb{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
+.jt{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar{height:7px;background:var(--s3);border-radius:4px;overflow:hidden}
+.fill{height:100%;background:linear-gradient(90deg,var(--g2),var(--g));border-radius:4px;transition:width .4s}
+.run .fill{background-size:200% 100%;background-image:linear-gradient(90deg,var(--g2),#d4ffe6,var(--g2));animation:sh 1.6s linear infinite}@keyframes sh{to{background-position:-200% 0}}
+.jm{display:flex;justify-content:space-between;gap:8px;color:var(--mu);font-size:13px;flex-wrap:wrap}
+.pill{padding:0 10px;border-radius:99px;border:1px solid var(--ln);font-size:12px}.pill.done{color:var(--g);border-color:#7dffb344}.pill.error,.pill.cancelled{color:var(--er);border-color:#ff6b6b44}
+.acts{display:flex;gap:8px;width:100%}.acts .btn{flex:1}
+.btn{background:var(--s2);border:1px solid var(--ln);border-radius:12px;padding:8px 12px;color:var(--tx);text-decoration:none;font-size:13px;text-align:center}
+.btn:hover{border-color:var(--g)}.btn.g{background:var(--g);color:#04110a;border-color:var(--g);font-weight:700}.btn.d:hover{border-color:var(--er);color:var(--er)}
+h2 .btn{padding:5px 11px;font-size:12px;text-transform:none;letter-spacing:0;font-weight:500}
+.empty{color:var(--mu);text-align:center;padding:26px 16px;border:1px dashed var(--ln);border-radius:var(--r);font-size:14px}
+.tag{display:inline-block;border:1px solid var(--ln);border-radius:99px;padding:1px 10px;margin:3px 4px 3px 0;font-size:12px;color:var(--mu)}
+.help{font-size:13px;color:var(--mu);margin-top:24px}.help b{color:var(--tx)}.help code{color:var(--g);overflow-wrap:anywhere}
+footer{margin-top:22px;font-size:12px;color:var(--mu);text-align:center}
+.set{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 2px;border-bottom:1px solid var(--ln)}.set:last-child{border:0}.set small{display:block;color:var(--mu)}
+#toast{position:fixed;bottom:calc(96px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(120px);background:var(--tx);color:#000;padding:10px 20px;border-radius:99px;font-weight:600;transition:.3s;z-index:9;max-width:90vw}#toast.show{transform:translateX(-50%)}
+
+/* desktop */
+@media(min-width:761px){
+  body{display:flex}.topbar{display:none}
+  .nav{position:sticky;top:0;left:auto;right:auto;bottom:auto;width:230px;height:100vh;flex:none;flex-direction:column;gap:26px;padding:24px 16px;border:0;border-right:1px solid var(--ln);border-radius:0;box-shadow:none;background:#07080a99}
+  .nav .logo{display:flex;align-items:center;gap:12px;padding:0 8px}.nav .sys{display:block;margin-top:auto;font-size:12px;color:var(--mu);border:1px solid var(--ln);border-radius:14px;padding:12px}
+  .nav nav{flex:none;flex-direction:column}.nav a{flex-direction:row;font-size:15px;padding:11px 12px;gap:12px;border-radius:12px}.bd{position:static;margin-left:auto}
+  main{flex:1;min-width:0;margin:0;padding:34px 48px 60px}
+  .intro h1{font-size:40px}.th{width:150px}.agrid{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}.cols{grid-template-columns:1fr 1fr;gap:16px}
+  .acts{width:auto;flex-direction:column}.job .th{width:112px}#toast{bottom:24px}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <span class="mark"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg></span>
+  <div class="brand">Amirul<small>Downloader</small></div>
+  <span class="dot" id="dot" title="Status server"></span>
+</header>
+<aside class="nav">
+  <div class="logo"><span class="mark"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg></span><div class="brand">Amirul<small>Downloader</small></div></div>
+  <nav>
+    <a href="#download" data-v="download"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 21h16"/></svg><span>Download</span><span class="bd" id="bd" hidden></span></a>
+    <a href="#history" data-v="history"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Riwayat</span></a>
+    <a href="#settings" data-v="settings"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span>Atur</span></a>
+  </nav>
+  <div class="sys" id="sys">…</div>
+</aside>
+<main>
+<div id="stale" class="warn" hidden></div>
+<section id="v-download">
+  <div class="intro">
+    <h1>Download apa saja</h1>
+    <p>YouTube, TikTok, Twitter/X, dan 1000+ situs lain. Boleh banyak link, satu per baris.</p>
+  </div>
+  <div class="field">
+    <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/></svg>
+    <textarea id="url" rows="1" placeholder="Tempel link di sini" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="url"></textarea>
+    <button class="ghost" id="paste" type="button">Tempel</button>
+    <button class="go" id="go" type="button">Cari</button>
+  </div>
+  <div id="sniff" class="badges"></div>
+  <div id="status"></div>
+  <div class="row scroll">
+    <button class="chip" data-p="video-best">⚡ Video terbaik</button>
+    <button class="chip" data-p="video-720">Video 720p</button>
+    <button class="chip" data-p="mp3">🎵 MP3</button>
+    <button class="chip" data-p="m4a">M4A</button>
+  </div>
+  <div id="prev"></div>
+  <div class="strip">
+    <span>Aktif<b id="sA">0</b></span>
+    <span>Selesai<b id="sD">0</b></span>
+    <span>Total unduh<b id="sT">0 B</b></span>
+  </div>
+  <h2>Antrean <button class="btn" id="clr">Bersihkan selesai</button></h2>
+  <div id="jobs"></div>
+  <div class="card help">
+    <b>Situs yang didukung</b><br>
+    <span class="tag">YouTube</span><span class="tag">TikTok</span><span class="tag">Instagram</span><span class="tag">Twitter/X</span><span class="tag">Reddit</span><span class="tag">Facebook</span><span class="tag">Vimeo</span><span class="tag">Twitch</span><span class="tag">SoundCloud</span><span class="tag">bilibili</span><span class="tag">1000+ lainnya</span>
+  </div>
+</section>
+<section id="v-history" hidden>
+  <h2>Riwayat <button class="btn d" id="hclr">Hapus semua</button></h2>
+  <div id="hist"></div>
+</section>
+<section id="v-settings" hidden>
+  <h2>Pengaturan</h2>
+  <div class="card">
+    <div class="set"><div>Simpan otomatis<small>File langsung diunduh browser saat selesai</small></div><input type="checkbox" class="sw" id="cAuto"></div>
+    <div class="set"><div>Notifikasi<small>Beri tahu saat download selesai</small></div><input type="checkbox" class="sw" id="cNotify"></div>
+    <div class="set"><div>Preset default<small>Untuk banyak link sekaligus</small></div>
+      <select id="cPreset"><option value="video-best">Video terbaik</option><option value="video-720">Video 720p</option><option value="mp3">MP3</option><option value="m4a">M4A</option></select></div>
+  </div>
+  <p class="empty" style="margin-top:16px">File di server dihapus otomatis 30 menit setelah selesai. Simpan ke perangkatmu sebelum itu.</p>
+</section>
+</main>
+<div id="toast"></div>
+<script>
+const H = {'X-Requested-With': 'yt-dlp-web'};
+const $ = s => document.querySelector(s);
+const el = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x !== undefined) e.textContent = x; return e; };
+const LS = {get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }};
+const UI_VERSION = '4', END = ['done', 'error', 'cancelled'];
+let cfg = {auto: true, notify: false, preset: 'video-best', ...LS.get('cfg', {})};
+let hist = LS.get('hist', []), jobs = [], uid = 0, maxMB = 500, fromStart = false;
+const STEP = {'Recording live': 'Merekam live', 'Saving the recording': 'Menyimpan rekaman…', 'Finishing the file': 'Menyelesaikan file…', 'Downloading': 'Mengunduh', 'Downloading video': 'Mengunduh video', 'Downloading audio': 'Mengunduh audio', 'Waiting for another download to finish': 'Menunggu download lain selesai'};
+const NOTE = [[/^Time limit/, 'Batas waktu tercapai. Rekaman sampai titik itu disimpan.'], [/^Size limit/, 'Batas ukuran tercapai. Rekaman sampai titik itu disimpan.']];
+const noteId = n => (NOTE.find(([r]) => r.test(n)) || [0, n])[1];
+
+async function api(path, o = {}) {
+  const r = await fetch(path, {cache: 'no-store', ...o, headers: {...H, 'Content-Type': 'application/json'}});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(typeof j.detail === 'string' ? j.detail : r.statusText);
+  return j;
+}
+const size = n => { if (!n) return '0 B'; const u = ['B', 'KB', 'MB', 'GB']; let i = 0; while (n >= 1024 && i < 3) { n /= 1024; i++; } return n.toFixed(i > 1 ? 1 : 0) + ' ' + u[i]; };
+const dur = s => { if (!s && s !== 0) return ''; s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s % 60).padStart(2, '0'); };
+let tt; const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 2800); };
+function status(msg, type = '', spin = false) { const s = $('#status'); s.className = type; s.replaceChildren(); if (spin) s.append(el('span', 'sp')); s.append(msg); }
+
+function route() {
+  const v = ['history', 'settings'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'download';
+  for (const n of ['download', 'history', 'settings']) $('#v-' + n).hidden = n !== v;
+  document.querySelectorAll('.nav a').forEach(a => a.classList.toggle('on', a.dataset.v === v));
+}
+addEventListener('hashchange', route); route();
+
+function pick(fs, p) {
+  const v = fs.filter(f => f.type === 'video' && !f.too_big), a = fs.filter(f => f.type === 'audio' && !f.too_big);
+  if (p === 'video-best') return v[0] || a[0];
+  if (p === 'video-720') return v.find(f => !f.height || f.height <= 720) || v[v.length - 1] || a[0];
+  if (p === 'm4a') return a.find(f => f.ext === 'm4a') || a[0];
+  return a.find(f => f.ext === 'mp3') || a[0];
+}
+const links = () => [...new Set($('#url').value.split(/\s+/).filter(u => /^https?:\/\//i.test(u)))];
+const lookup = url => api('/api/info', {method: 'POST', body: JSON.stringify({url})});
+const img = (src, c = 'th') => src ? Object.assign(el('img', c), {src, referrerPolicy: 'no-referrer'}) : el('div', c, '▶');
+
+async function start(url, info, f) {
+  const live = info.analysis?.kind === 'live';
+  const j = {uid: ++uid, url, title: info.title, thumb: info.thumbnail, label: f.label, status: 'queued', step: 'Menyiapkan…', percent: null, live, t0: Date.now()};
+  jobs.unshift(j); render();
+  try {
+    const r = await api('/api/download', {method: 'POST', body: JSON.stringify({url, format_id: f.format_id, ext: f.ext, audio_bitrate: f.audio_bitrate || '0', title: info.title, kbps: f.kbps || null, embed_thumbnail: !!f.thumb, embed_metadata: !!f.meta, live, live_from_start: live && fromStart})});
+    j.jid = r.job_id;
+  } catch (e) { j.status = 'error'; j.error = e.message; }
+  render();
+}
+
+async function quick(urls, preset) {
+  $('#prev').replaceChildren();
+  for (const url of urls) {
+    const ph = {uid: ++uid, url, title: url, status: 'queued', step: 'Mencari info…', percent: null};
+    jobs.unshift(ph); render();
+    try {
+      const info = await lookup(url); maxMB = info.max_size_mb || maxMB;
+      const f = pick(info.formats, preset);
+      jobs = jobs.filter(x => x !== ph);
+      if (info.analysis?.kind === 'upcoming') throw new Error('Siaran belum dimulai.');
+      if (!f) throw new Error('Tidak ada format yang cocok / terlalu besar.');
+      await start(url, info, f);
+    } catch (e) { ph.status = 'error'; ph.error = e.message; render(); }
+  }
+}
+
+async function search() {
+  const urls = links();
+  if (!urls.length) return status('Tempel link yang diawali http:// atau https://', 'error');
+  if (urls.length > 1) { $('#url').value = ''; renderSniff(); status(''); return quick(urls, cfg.preset); }
+  const b = $('#go'); b.disabled = true; status('Mencari info…', '', true);
+  try {
+    const info = await lookup(urls[0]); maxMB = info.max_size_mb || maxMB;
+    showPrev(urls[0], info); status('✓ Siap — pilih format', 'ok');
+  } catch (e) { status('✗ ' + e.message, 'error'); }
+  b.disabled = false;
+}
+
+const NF = new Intl.NumberFormat('id-ID', {notation: 'compact', maximumFractionDigits: 1});
+const num = n => n == null ? null : NF.format(n);
+const SRC = [[/youtube\.com|youtu\.be/, 'YouTube'], [/(^|\.)(twitter|x)\.com$|^t\.co$/, 'Twitter / X'], [/tiktok\.com/, 'TikTok'], [/instagram\.com/, 'Instagram'], [/facebook\.com|fb\.watch/, 'Facebook'], [/reddit\.com|redd\.it/, 'Reddit'], [/twitch\.tv/, 'Twitch'], [/vimeo\.com/, 'Vimeo'], [/soundcloud\.com/, 'SoundCloud'], [/bilibili\.com|b23\.tv/, 'Bilibili']];
+function sniff(u) {
+  let x; try { x = new URL(u); } catch { return null; }
+  const host = x.hostname.replace(/^www\./, ''), path = x.pathname.toLowerCase();
+  const src = (SRC.find(([r]) => r.test(host)) || [0, host])[1];
+  let kind = 'Video';
+  if (/\/shorts\/|\/reels?\/|\/clip\//.test(path) || /tiktok\.com\/.+\/video\//.test(u.toLowerCase())) kind = 'Short / Reel';
+  else if (/\/live(\/|$)|\/i\/broadcasts\/|\/i\/spaces\/|twitch\.tv\/[^/]+$/.test(path)) kind = 'Live (perkiraan)';
+  else if (x.searchParams.has('list') || /\/playlist/.test(path)) kind = 'Ada parameter playlist';
+  else if (/soundcloud/.test(host)) kind = 'Audio';
+  return {src, kind};
+}
+function renderSniff() {
+  autosize();
+  const box = $('#sniff'); box.replaceChildren();
+  const us = links().map(sniff).filter(Boolean); if (!us.length) return;
+  const add = (t, c = '') => box.append(el('span', 'badge ' + c, t));
+  if (us.length === 1) { add(us[0].src, 'src'); add(us[0].kind, /Live/.test(us[0].kind) ? 'live' : ''); return; }
+  add(us.length + ' link');
+  const cnt = {}; us.forEach(u => cnt[u.src] = (cnt[u.src] || 0) + 1);
+  Object.entries(cnt).forEach(([k, v]) => add(`${k} ×${v}`, 'src'));
+}
+
+function analysisCard(info, url) {
+  const a = info.analysis; if (!a) return el('div');
+  const KIND = {live: ['LIVE', 'live'], upcoming: ['Akan live', ''], live_replay: ['Rekaman live', ''], short: ['Short / Reel', ''], audio: ['Audio', ''], video: ['Video', '']};
+  const box = el('div', 'ana'), bs = el('div', 'badges'), g = el('div', 'agrid');
+  const add = (t, c = '') => bs.append(el('span', 'badge ' + c, t));
+  const [kt, kc] = KIND[a.kind] || KIND.video;
+  add(a.source, 'src'); add(kt, kc);
+  if (a.max_height >= 2160) add('4K'); else if (a.max_height >= 1080) add('HD');
+  if (a.hdr) add('HDR'); if (a.vertical) add('Vertikal'); if (a.age_limit) add(a.age_limit + '+');
+  const stat = (k, v) => { if (v == null || v === '' || v === 0) return; const d = el('div'); d.append(el('small', '', k), el('b', '', String(v))); g.append(d); };
+  const up = a.uploaded && a.uploaded.length === 8 ? `${a.uploaded.slice(6)}/${a.uploaded.slice(4, 6)}/${a.uploaded.slice(0, 4)}` : null;
+  stat('Situs', a.domain);
+  stat('Durasi', a.kind === 'live' ? 'tayang sekarang' : dur(a.duration));
+  stat('Kualitas maks', a.max_height ? a.max_height + 'p' + (a.max_fps > 30 ? ' ' + a.max_fps + 'fps' : '') : null);
+  stat('Stream', `${a.video_streams} video · ${a.audio_streams} audio`);
+  stat('Penonton', num(a.views)); stat('Suka', num(a.likes)); stat('Komentar', num(a.comments));
+  stat('Diunggah', up); stat('Channel', a.channel ? a.channel + (a.followers ? ` (${num(a.followers)})` : '') : null);
+  stat('Subtitel', a.subtitles.length ? a.subtitles.join(', ') : (a.auto_captions ? a.auto_captions + ' bahasa otomatis' : null));
+  stat('Bab', a.chapters); stat('Akses', a.availability && a.availability !== 'public' ? a.availability : null);
+  box.append(bs, g);
+  const warn = t => box.append(el('div', 'warn', t));
+  if (a.kind === 'live') warn('Siaran langsung: tombol di bawah akan merekam. Tekan Stop & Simpan kapan saja untuk menyimpan bagian yang sudah terekam. Rekaman otomatis disimpan saat batas waktu atau ukuran server tercapai.');
+  if (a.kind === 'upcoming') warn('Siaran belum dimulai, jadi belum bisa diunduh.');
+  if (a.age_limit) warn('Konten berbatas umur. Mungkin butuh cookies.txt agar bisa diunduh.');
+  if (/[?&]list=/.test(url) && a.source === 'YouTube') warn('Link ini membawa playlist. Hanya video ini yang diunduh.');
+  return box;
+}
+
+function showPrev(url, info) {
+  let sel = null, tab = 'q'; fromStart = false;
+  const live = info.analysis?.kind === 'live', upcoming = info.analysis?.kind === 'upcoming';
+  const adv = {v: undefined, a: 'auto', c: 'mp4', t: 'mp3'};
+  const au = {f: 'mp3', k: '0', s: 'auto', thumb: true, meta: true};
+  const box = $('#prev'), c = el('div', 'card prev'), top = el('div', 'top'), mt = el('div', 'mt');
+  mt.append(el('b', '', info.title), el('small', '', [info.uploader, dur(info.duration)].filter(Boolean).join(' · ')));
+  top.append(img(info.thumbnail), mt);
+  const panes = {q: el('div', 'pane'), u: el('div', 'pane'), a: el('div', 'pane')};
+  const dl = el('button', 'cta big', 'Pilih format dulu'); dl.disabled = true;
+  const note = el('div', 'note');
+  const mark = (grp, btn) => grp.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === btn));
+  const setSel = (s, node) => {
+    sel = s; dl.disabled = !s || upcoming; dl.textContent = upcoming ? 'Siaran belum dimulai' : s ? (live ? '⏺ Rekam — ' : '⬇ Download — ') + s.label : 'Pilih format dulu';
+    panes.q.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === node));
+  };
+  const notes = new Set();
+
+  // 1. Cepat: one choice per quality, plus MP3 / M4A
+  for (const [name, type] of [['Video', 'video'], ['Audio', 'audio']]) {
+    const fs = info.formats.filter(f => f.type === type); if (!fs.length) continue;
+    const r = el('div', 'row'); r.append(el('small', '', name));
+    for (const f of fs) {
+      const b = el('button', 'chip', f.label);
+      const x = [f.codec, f.filesize ? (f.ext === 'mp3' ? '~' : '') + size(f.filesize) : ''].filter(Boolean).join(' · ');
+      if (x) b.append(el('i', '', x));
+      if (f.codec) notes.add(`${f.codec} gambarnya terbaik di kualitas ini, tapi mungkin tidak bisa diputar di HP/TV lama. Pilih yang tanpa label untuk dukungan terluas.`);
+      if (f.too_big) { b.disabled = true; b.title = `Lebih besar dari batas ${info.max_size_mb} MB`; notes.add(`Pilihan yang redup lebih besar dari batas server (${info.max_size_mb} MB).`); }
+      b.onclick = () => setSel(f, b); r.append(b);
+    }
+    panes.q.append(r);
+  }
+
+  // 2. Audio only: format, bitrate, source stream, cover art + tags
+  const AF = [['mp3', 'MP3', 'paling kompatibel'], ['m4a', 'M4A', 'AAC'], ['opus', 'Opus', 'efisien'], ['ogg', 'OGG', 'Vorbis'], ['flac', 'FLAC', 'lossless'], ['wav', 'WAV', 'tanpa kompresi']];
+  const KB = [['0', 'Terbaik'], ['320', '320k'], ['256', '256k'], ['192', '192k'], ['160', '160k'], ['128', '128k'], ['96', '96k'], ['64', '64k']];
+  const fRow = el('div', 'row'), kRow = el('div', 'row'), est = el('div', 'note');
+  AF.forEach(([k, n, s]) => { const b = el('button', 'chip' + (k === au.f ? ' on' : ''), n); b.append(el('i', '', s)); b.onclick = () => { au.f = k; mark(fRow, b); applyAu(); }; fRow.append(b); });
+  KB.forEach(([k, n]) => { const b = el('button', 'chip' + (k === au.k ? ' on' : ''), n); b.onclick = () => { au.k = k; mark(kRow, b); applyAu(); }; kRow.append(b); });
+  const auds = (info.all_formats || []).filter(f => f.kind === 'audio');
+  const sSel = el('select'); sSel.append(new Option('Otomatis (stream audio terbaik)', 'auto'));
+  auds.forEach(f => { const o = new Option([f.id, f.ext, f.ac, f.abr ? f.abr + 'k' : '', f.size ? size(f.size) : ''].filter(Boolean).join(' · '), f.id); o.disabled = f.too_big; sSel.append(o); });
+  sSel.onchange = () => { au.s = sSel.value; applyAu(); };
+  const tog = (title, sub, key) => {
+    const d = el('div', 'tog'), l = el('div'), i = Object.assign(el('input', 'sw'), {type: 'checkbox', checked: au[key]});
+    l.append(el('div', '', title), el('small', '', sub)); i.onchange = () => { au[key] = i.checked; applyAu(); }; d.append(l, i); d.input = i; return d;
+  };
+  const tThumb = tog('Sematkan cover', 'Thumbnail jadi cover art di file audio', 'thumb'), tMeta = tog('Sematkan metadata', 'Judul, artis, dan tanggal ditulis ke tag', 'meta');
+  const kLab = el('div', 'sub', 'Bitrate');
+  panes.u.append(el('div', 'sub', 'Format'), fRow, kLab, kRow, el('div', 'sub', 'Sumber stream'), sSel, el('div', 'sub', 'Tambahan'), tThumb, tMeta, est);
+  function applyAu() {
+    const lossless = ['flac', 'wav'].includes(au.f), kb = lossless || au.k === '0' ? null : au.k;
+    kLab.hidden = kRow.hidden = lossless;
+    tThumb.input.disabled = au.f === 'wav'; tThumb.style.opacity = au.f === 'wav' ? .4 : 1;
+    const rate = lossless ? (au.f === 'wav' ? 1411 : 900) : kb ? +kb : ({mp3: 245, m4a: 160, opus: 128, ogg: 192})[au.f];
+    const bytes = info.duration ? rate * 125 * info.duration : 0;
+    est.textContent = (bytes ? `Perkiraan ukuran ≈ ${size(bytes)}. ` : '') + (lossless ? 'Dikonversi dari sumber lossy: ukuran besar, kualitas tidak naik. ' : '') + (bytes > info.max_size_mb * 1e6 ? `Melebihi batas server ${info.max_size_mb} MB.` : '');
+    setSel({format_id: au.s === 'auto' ? 'bestaudio/best' : au.s, ext: au.f, audio_bitrate: '0', kbps: kb, thumb: au.thumb && au.f !== 'wav', meta: au.meta, label: `${au.f.toUpperCase()}${kb ? ' ' + kb + 'k' : lossless ? '' : ' terbaik'}`});
+  }
+
+  // 3. Semua format: any video stream + any audio stream, any container
+  const all = info.all_formats || [], vids = all.filter(f => f.kind !== 'audio');
+  const rowf = (txt, sz, f, grp, pick) => {
+    const b = el('button', 'rf'); b.append(el('span', '', txt), el('span', '', sz));
+    if (f && f.too_big) { b.disabled = true; b.title = `Lebih besar dari batas ${info.max_size_mb} MB`; }
+    b.onclick = () => { grp.querySelectorAll('.rf').forEach(x => x.classList.toggle('on', x === b)); pick(); applyAdv(); };
+    grp.append(b); return b;
+  };
+  const vl = el('div', 'lst'), al = el('div', 'lst'), opt = el('div', 'row');
+  const mkSel = (opts, key) => { const s = el('select'); opts.forEach(o => s.append(new Option(o.toUpperCase(), o))); s.value = adv[key]; s.onchange = () => { adv[key] = s.value; applyAdv(); }; return s; };
+  const cSel = mkSel(['mp4', 'mkv', 'webm'], 'c'), tSel = mkSel(['mp3', 'm4a', 'opus', 'ogg', 'flac', 'wav'], 't');
+  const cLab = el('small', '', 'Wadah:'), tLab = el('small', '', 'Konversi audio ke:');
+  opt.append(cLab, cSel, tLab, tSel, el('small', '', 'WebM hanya cocok untuk stream VP9/AV1. Kalau gagal, pakai MKV.'));
+  const desc = f => [f.id, f.res || (f.abr ? f.abr + 'k' : ''), f.fps > 30 ? f.fps + 'fps' : '', f.vc, f.ac && f.kind === 'both' ? '+' + f.ac : f.ac, f.ext, f.note].filter(Boolean).join(' · ');
+  rowf('Tanpa video (audio saja)', '', null, vl, () => { adv.v = null; });
+  vids.forEach(f => rowf(desc(f) + (f.kind === 'both' ? ' · video+audio' : ''), f.size ? size(f.size) : '', f, vl, () => { adv.v = f; }));
+  rowf('Otomatis (audio terbaik)', '', null, al, () => { adv.a = 'auto'; }).classList.add('on');
+  auds.forEach(f => rowf(desc(f), f.size ? size(f.size) : '', f, al, () => { adv.a = f; }));
+  const col = (t, l) => { const d = el('div'); d.append(el('h3', 'sub', t), l); return d; };
+  const cols = el('div', 'cols'); cols.append(col('Stream video', vl), col('Stream audio', al));
+  panes.a.append(cols, opt);
+  function applyAdv() {
+    const {v, a, c, t} = adv, audioOnly = v === null;
+    cLab.hidden = cSel.hidden = audioOnly || v === undefined; tLab.hidden = tSel.hidden = !audioOnly;
+    al.querySelectorAll('.rf').forEach(x => x.style.opacity = v && v.kind === 'both' ? .35 : 1);
+    if (v === undefined) return setSel(null);
+    const aid = a !== 'auto' && !(v && v.kind === 'both') ? a.id : null;
+    if (audioOnly) return setSel({format_id: aid || 'bestaudio/best', ext: t, audio_bitrate: '0', label: 'Audio ' + t.toUpperCase()});
+    setSel({format_id: v.kind === 'both' ? v.id : aid ? `${v.id}+${aid}` : `${v.id}+ba/${v.id}`, ext: c, label: `${v.res || v.id} ${c.toUpperCase()}`});
+  }
+
+  // tabs
+  const tabs = el('div', 'tabs'), tbs = {};
+  for (const [k, n] of [['q', 'Cepat'], ['u', '🎵 Audio only'], ['a', 'Semua format']]) {
+    const b = el('button', k === tab ? 'on' : '', n); tbs[k] = b; tabs.append(b);
+    b.onclick = () => {
+      tab = k; for (const x in panes) { panes[x].hidden = x !== k; tbs[x].classList.toggle('on', x === k); }
+      setSel(null); if (k === 'u') applyAu(); if (k === 'a') applyAdv();
+    };
+  }
+  panes.u.hidden = panes.a.hidden = true;
+  if (info.downloads_left != null) notes.add(info.downloads_left > 0 ? `Kamu masih bisa mengunduh ${info.downloads_left} file hari ini.` : 'Batas download hari ini habis. Reset tengah malam UTC.');
+  note.textContent = [...notes].join(' ');
+  dl.onclick = () => { if (sel) start(url, info, sel); };
+  const liveTog = el('div');
+  if (live && info.analysis.source === 'YouTube') {
+    const d = el('div', 'tog'), l = el('div'), i = Object.assign(el('input', 'sw'), {type: 'checkbox'});
+    l.append(el('div', '', 'Rekam dari awal siaran'), el('small', '', 'Eksperimental, hanya YouTube. Ukuran bisa besar.'));
+    i.onchange = () => { fromStart = i.checked; }; d.append(l, i); liveTog.append(d);
+  }
+  c.append(top, analysisCard(info, url), liveTog, tabs, panes.q, panes.u, panes.a, note, dl);
+  box.replaceChildren(c);
+}
+
+function done(j) {
+  hist.unshift({t: j.title, th: j.thumb, l: j.label, u: j.url, ts: Date.now(), s: j.size});
+  hist = hist.slice(0, 100); LS.set('hist', hist);
+  if (cfg.auto) { const a = Object.assign(document.createElement('a'), {href: `/api/jobs/${encodeURIComponent(j.jid)}/file`, download: j.filename || ''}); document.body.append(a); a.click(); a.remove(); }
+  if (cfg.notify && 'Notification' in window && Notification.permission === 'granted') new Notification('Selesai', {body: j.title});
+  renderHist();
+}
+
+const snap = () => JSON.stringify(jobs.map(j => [j.jid, j.status, j.step, j.percent, j.downloaded, j.speed, j.eta, j.error, j.size, j.note]));
+async function tick() {
+  const before = snap();
+  for (const j of jobs.filter(x => x.jid && !END.includes(x.status))) {
+    try {
+      const s = await api('/api/jobs/' + j.jid);
+      if (j.status === 'cancelled') continue;
+      const was = j.status;
+      Object.assign(j, {status: s.status, step: s.step, percent: s.percent, downloaded: s.downloaded, speed: s.speed, eta: s.eta, error: s.error, filename: s.filename, size: s.size, note: s.note});
+      if (s.status === 'done' && was !== 'done') done(j);
+    } catch (e) { j.status = 'error'; j.error = e.message; }
+  }
+  if (snap() !== before || jobs.some(j => j.live && j.status === 'downloading')) render();
+}
+setInterval(tick, 1000);
+
+const cards = new WeakMap();
+const PILL = {queued: "antre", downloading: "unduh", processing: "proses", done: "selesai", error: "gagal", cancelled: "batal"};
+
+function jobCard(j) {
+  const card = el("div", "card job");
+  const jb = el("div", "jb"), title = el("div", "jt", j.title);
+  const bar = el("div", "bar"), fill = el("div", "fill"); bar.append(fill);
+  const jm = el("div", "jm"), label = el("span"), pill = el("span", "pill");
+  jm.append(label, pill); jb.append(title, bar, jm);
+  const acts = el("div", "acts");
+  card.append(img(j.thumb), jb, acts);
+  return {card, title, fill, label, pill, acts, sig: null};
+}
+
+function jobLabel(j, rec) {
+  let l = j.label ? j.label + " · " : "";
+  if (rec) l += `⏺ Merekam ${dur((Date.now() - j.t0) / 1000)}` + (j.downloaded ? " · " + size(j.downloaded) : "");
+  else if (j.status === "downloading") l += [j.step + (j.percent != null ? " " + Math.floor(j.percent) + "%" : (j.downloaded ? " " + size(j.downloaded) : "")), j.speed ? size(j.speed) + "/s" : "", j.eta ? dur(j.eta) + " lagi" : ""].filter(Boolean).join(" · ");
+  else if (j.status === "done") l += size(j.size || 0) + (j.note ? " · " + noteId(j.note) : "");
+  else l += j.error || STEP[j.step] || j.step || j.status;
+  return l;
+}
+
+function updateCard(j, r) {
+  const rec = j.live && j.status === "downloading";
+  r.card.classList.toggle("run", ["downloading", "processing"].includes(j.status));
+  if (r.title.textContent !== j.title) r.title.textContent = j.title;
+  r.fill.style.width = (j.status === "done" || rec ? 100 : j.percent ?? (j.status === "processing" ? 100 : 3)) + "%";
+  const l = jobLabel(j, rec);
+  if (r.label.textContent !== l) r.label.textContent = l;
+  const p = PILL[j.status] ? (j.status === "downloading" && rec ? "merekam" : PILL[j.status]) : j.status;
+  r.pill.className = "pill " + j.status;
+  if (r.pill.textContent !== p) r.pill.textContent = p;
+  // buttons are rebuilt only when what they show changes, so they never flicker
+  const sig = [j.status, rec, j.jid, j.filename].join("|");
+  if (r.sig === sig) return;
+  r.sig = sig;
+  const acts = [];
+  if (j.status === "done") acts.push(Object.assign(el("a", "btn g", "Simpan"), {href: `/api/jobs/${encodeURIComponent(j.jid)}/file`, download: j.filename || ""}));
+  if (rec) { const x = el("button", "btn g", "⏹ Stop & Simpan"); x.onclick = () => stopSave(j); acts.push(x); }
+  if (!END.includes(j.status)) { const x = el("button", "btn d", "Batal"); x.onclick = () => cancel(j); acts.push(x); }
+  else { const x = el("button", "btn", "Hapus"); x.onclick = () => { jobs = jobs.filter(y => y !== j); render(); }; acts.push(x); }
+  r.acts.replaceChildren(...acts);
+}
+
+function render() {
+  const box = $("#jobs");
+  const act = jobs.filter(j => !END.includes(j.status)).length, bd = $("#bd");
+  bd.hidden = !act; bd.textContent = act; $("#sA").textContent = act;
+  if (!jobs.length) { box.replaceChildren(el("div", "empty", "Belum ada antrean. Tempel link di atas.")); return; }
+  const cardsNow = [];
+  for (const j of jobs) {
+    let r = cards.get(j);
+    if (!r) { r = jobCard(j); cards.set(j, r); }
+    updateCard(j, r);
+    cardsNow.push(r.card);
+  }
+  for (const ch of [...box.children]) if (!cardsNow.includes(ch)) ch.remove();
+  cardsNow.forEach((card, i) => { if (box.children[i] !== card) box.insertBefore(card, box.children[i] || null); });
+}
+async function stopSave(j) {
+  try { await api(`/api/jobs/${j.jid}/stop`, {method: 'POST', body: '{}'}); Object.assign(j, {status: 'processing', step: 'Saving the recording'}); render(); }
+  catch (e) { toast(e.message); }
+}
+async function cancel(j) {
+  j.status = 'cancelled'; j.error = 'Dibatalkan'; render();
+  if (j.jid) try { await api('/api/jobs/' + j.jid, {method: 'DELETE'}); } catch {}
+}
+
+function renderHist() {
+  $('#sD').textContent = hist.length; $('#sT').textContent = size(hist.reduce((a, h) => a + (h.s || 0), 0));
+  const box = $('#hist'); box.replaceChildren();
+  if (!hist.length) { box.append(el('div', 'empty', 'Riwayat kosong.')); return; }
+  for (const h of hist) {
+    const c = el('div', 'card job'); c.append(img(h.th));
+    const b = el('div', 'jb'); b.append(el('div', 'jt', h.t), el('div', 'jm', `${h.l || ''} · ${h.s ? size(h.s) : ''} · ${new Date(h.ts).toLocaleString('id-ID')}`));
+    const x = el('button', 'btn', 'Unduh lagi'); x.onclick = () => { $('#url').value = h.u; location.hash = '#download'; renderSniff(); };
+    c.append(b, x); box.append(c);
+  }
+}
+$('#hclr').onclick = () => { if (confirm('Hapus semua riwayat?')) { hist = []; LS.set('hist', hist); renderHist(); } };
+$('#clr').onclick = () => { jobs = jobs.filter(j => !END.includes(j.status)); render(); };
+$('#go').onclick = search;
+let sn; $('#url').addEventListener('input', () => { clearTimeout(sn); sn = setTimeout(renderSniff, 150); });
+$('#url').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); search(); } });
+document.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { const u = links(); if (!u.length) return status('Tempel link dulu', 'error'); $('#url').value = ''; renderSniff(); status(''); quick(u, b.dataset.p); });
+
+$('#cAuto').checked = cfg.auto; $('#cNotify').checked = cfg.notify; $('#cPreset').value = cfg.preset;
+const save = () => LS.set('cfg', cfg);
+$('#cAuto').onchange = e => { cfg.auto = e.target.checked; save(); };
+$('#cNotify').onchange = async e => {
+  cfg.notify = e.target.checked;
+  if (cfg.notify && (!('Notification' in window) || await Notification.requestPermission() !== 'granted')) { cfg.notify = e.target.checked = false; toast('Notifikasi tidak tersedia / ditolak'); }
+  save();
+};
+$('#cPreset').onchange = e => { cfg.preset = e.target.value; save(); };
+api('/api/health').then(h => {
+  $('#dot').className = 'dot ok';
+  $('#sys').textContent = `UI v${UI_VERSION} · yt-dlp ${h.ytdlp_version} · JS: ${h.js_runtime || 'tidak ada'}`;
+  if (h.app_version !== UI_VERSION) { const s = $('#stale'); s.hidden = false; s.textContent = 'Server masih versi lama, jadi sebagian fitur baru belum jalan. Build ulang image: docker compose build --no-cache && docker compose up -d'; }
+}).catch(() => { $('#sys').textContent = 'server tidak terjangkau'; $('#dot').className = 'dot bad'; });
+const autosize = () => { const u = $('#url'); u.style.height = 'auto'; u.style.height = Math.min(u.scrollHeight, 160) + 'px'; };
+$('#url').addEventListener('input', autosize);
+$('#paste').onclick = async () => {
+  try {
+    const t = (await navigator.clipboard.readText()).trim();
+    if (!t) return status('Clipboard kosong', 'error');
+    $('#url').value = $('#url').value.trim() ? $('#url').value.trim() + '\n' + t : t;
+    renderSniff(); if (links().length === 1) search();
+  } catch { status('Izinkan akses clipboard, atau tempel manual', 'error'); }
+};
+if (!/^https?:$/.test(location.protocol)) {
+  const s = $('#stale'); s.hidden = false;
+  s.textContent = 'Halaman ini dibuka sebagai file, bukan lewat server, jadi tombolnya tidak akan berfungsi. Buka lewat alamat server di browser, misalnya http://IP-SERVER:8080';
+}
+render(); renderHist();
+</script>
+</body>
+</html>
